@@ -3,34 +3,40 @@
 // application options
 const floatingColors = {
 	backgroundColor: '#fff',
-	redrawInterval: 50,
+	redrawInterval: 100, 
 	animationOptions: {
 		strategyStep: 10,
-		strategyInterval: 4000,
+		strategyInterval: 2000,
 	}
 };
 
 // setup noops api request parameters
 const requestOptions = {
 	API: 'hexbot',
-	count: 12,
-	width: 1000,
-	height: 1000
+	count: 8,
+	width: window.innerWidth,
+	height: window.innerWidth
 };
 
-window.onload = initFloatingColors;
+window.onload = function() {
+	const reinitializeButton = document.getElementById('new-colors');
+	reinitializeButton.addEventListener('click', initFloatingColors);
 
+	initFloatingColors();
+}
+
+
+// Main function 
 async function initFloatingColors() {
-	const canvasElem = document.getElementById('canvas');
-
-	// create new canvas by simple canvas api
-	floatingColors.canvas = new window.Canvas(canvasElem, {
-		bgColor: floatingColors.backgroundColor,
-	});
-
 	// get colors data from Hexbot Noops api 
 	const hexbotApi = window.noopsApiCaller;
 	const { colors: hexbotColors } = await hexbotApi(requestOptions);
+
+	// create new canvas by simple canvas api
+	const canvasElem = document.getElementById('canvas');
+	floatingColors.canvas = new window.Canvas(canvasElem, {
+		bgColor: floatingColors.backgroundColor,
+	});
 
 	// convert obtained colors data to expected format
 	const gradients = prepareGradientsMeta(hexbotColors);
@@ -131,6 +137,7 @@ function animation(options) {
 			coords.x > 0 ? coords.x-=step : coords.x;
 			coords.y > 0 ? coords.y-=step : coords.y;
 		}
+		console.log(strategy);
 	}
 }
 

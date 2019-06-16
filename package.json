@@ -9,7 +9,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "app": "browser-sync start --server --index \"index.html\" --ss \"js\" --files \"js\""
+    "app": "browser-sync start --server --index \"index.html\" --ss \".\" --files \".\""
   },
   "repository": {
     "type": "git",
