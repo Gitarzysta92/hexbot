@@ -1,7 +1,6 @@
 'use strict'
 const API_BASE = 'https://api.noopschallenge.com';
 
-
 function noopsApiCaller(options) {
 	const params = [];
 

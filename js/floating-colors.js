@@ -1,133 +1,148 @@
 'use strict'
 
-const floatingColors = {};
-const hexbotApi = window.noopsApiCaller;
+// application options
+const floatingColors = {
+	backgroundColor: '#fff',
+	redrawInterval: 50,
+	animationOptions: {
+		strategyStep: 10,
+		strategyInterval: 4000,
+	}
+};
+
+// setup noops api request parameters
 const requestOptions = {
 	API: 'hexbot',
-	count: 8,
+	count: 12,
 	width: 1000,
 	height: 1000
 };
 
+window.onload = initFloatingColors;
 
-const colors = [
-	{
-		firstColor: {
-			value: 'rgba(5,255,5,0.7)',
-			x: 546,
-			y: 100,
-		},
-		secondColor: {
-			value: 'rgba(125,0,0,0.5)',
-			x: 1000,
-			y: 700,
-		},
-	},
-	{
-		firstColor: {
-			value: 'rgba(11,222,135,0.5)',
-			x: 222,
-			y: 1,
-		},
-		secondColor: {
-			value: 'rgba(255,125,162,0.1)',
-			x: 236,
-			y: 450,
-		},
-	},
-	{
-		firstColor: {
-			value: 'rgba(125,2,135,0.7)',
-			x: 263,
-			y: 1000,
-		},
-		secondColor: {
-			value: 'rgba(125,7,4,0.1)',
-			x: 30,
-			y: 200,
-		},
-	}
-]
-
-
-window.onload = async function(evt) {
+async function initFloatingColors() {
 	const canvasElem = document.getElementById('canvas');
+
+	// create new canvas by simple canvas api
 	floatingColors.canvas = new window.Canvas(canvasElem, {
-		bgColor: '#fff',
+		bgColor: floatingColors.backgroundColor,
 	});
-	
+
+	// get colors data from Hexbot Noops api 
+	const hexbotApi = window.noopsApiCaller;
 	const { colors: hexbotColors } = await hexbotApi(requestOptions);
 
-	//const colors = hexbotColors.reduce((acc, curr, index) => {
-		//console.log(acc, curr, index);	
-	//}, []);
-	
-	const animations = colors.map(color => createGradient(color));
+	// convert obtained colors data to expected format
+	const gradients = prepareGradientsMeta(hexbotColors);
 
+	// create new gradients depending on created color model
+	const animations = gradients.map(gradient => createGradient({
+		animationOptions: floatingColors.animationOptions,
+		gradient
+	}));
+
+	// start animating (redrawing) canvas
 	setInterval(function(){
 		floatingColors.canvas.draw(function(){
-			animations.forEach(animation => animation());
+			animations.forEach(animate => animate());
 		});
-	},50);
-
+	}, floatingColors.redrawInterval);
 }
 
 
+// accept Hexbot Noops api result 
+// and convert it to expected format
+function prepareGradientsMeta(hexbotColors) {
+	return hexbotColors.reduce((acc, curr, index) => {
+		const isNewColor = index % 2 === 0 ? true : false;
+		const colorData = {
+			color: `rgba(${hexToRGB(curr.value)}, ${isNewColor ? 1 : 0.1})`,
+			coords: {
+				x: curr.coordinates.x,
+				y: curr.coordinates.y
+			}	
+		}
+		if (isNewColor) {	
+			return acc = [{ first: {...colorData} }, ...acc]
+		} else {
+			acc[0].second = {...colorData}
+			return acc;
+		}
+	}, []);
+}
 
+
+// create new gradient using simple canvas api and setup animations for it
 function createGradient(options) {
 	const { width, height } = floatingColors.canvas; 
-	const { firstColor, secondColor } = options;
+	const { gradient: gradientMeta, animationOptions } = options;
 
-	let { x: x1, y: y1 } = firstColor;
-	let { x: x2, y: y2 } = secondColor;
-
-	floatingColors.canvas.addShape(`gradient${x1}`, function(canvas) {
-		//const gradient = canvas.ctx.createLinearGradient(x1, y1, x2, y2);
-		const gradient = canvas.ctx.createRadialGradient(x1, y1, 0, x2, y2, 1500);
-		gradient.addColorStop(0, firstColor.value);
-		gradient.addColorStop(1, secondColor.value);
+	floatingColors.canvas.addShape(`gradient${gradientMeta.first.color}`, function(canvas) {
+		const gradient = canvas.ctx.createRadialGradient(
+			gradientMeta.first.coords.x, 
+			gradientMeta.first.coords.y, 
+			0, 
+			gradientMeta.first.coords.x + (gradientMeta.second.coords.x * 0.1), 
+			gradientMeta.first.coords.y + (gradientMeta.second.coords.y * 0.1), 
+			1000
+		);
+		gradient.addColorStop(0, gradientMeta.first.color);
+		gradient.addColorStop(1, gradientMeta.second.color);
 		canvas.ctx.fillStyle = gradient;
 		canvas.ctx.fillRect(0,0, canvas.width, canvas.height);
 	});
-
-	const variants = ['first', 'second', 'third', 'fourth'];
 	
-	let firstSet = variants[Math.floor((Math.random() * 4))];
-	let secondSet = variants[Math.floor((Math.random() * 4))];
-	setInterval(function() {
-		firstSet = variants[Math.floor((Math.random() * 4))];
-		secondSet = variants[Math.floor((Math.random() * 4))];
-	},5000)
-	const step = 2;
+	animationOptions.coords = gradientMeta.first.coords;
+	animationOptions.maxX = width;
+	animationOptions.maxY = height;
 
-	return function() {
-		if (firstSet === 'first') {
-			x1 < width || x1 < 0 ? x1+=step : x1;
-			y1 < height || y1 < 0 ? y1+=step : y1;
-		} else if (firstSet === 'second') {
-			x1 > 0 ? x1-=step : x1;
-			y1 > height || y1 < 0 ? y1+=step : y1;
-		} else if (firstSet === 'third') {
-			x1 > width || y1 < 0 ? x1+=step : x1;
-			x1 > 0 ? y1-=step : y1;
-		} else if (firstSet=== 'fourth') {
-			x1 > 0 ? x1-=step : x1;
-			y1 > 0 ? y1-=step : y1;
+	return animation(animationOptions);		
+}
+
+
+// chagne randomly given coordinates
+function animation(options) {
+	const step = options.step || 10;
+	const interval = options.interval || 4000;
+	const coords = options.coords; 
+	const max = {
+		x: options.maxX || 2000,
+		y: options.maxY || 2000
+	}
+	const strategies = ['first', 'second', 'third', 'fourth'];
+	const randomize = function() {
+		return strategies[Math.floor((Math.random() * strategies.length))];
+	}
+
+	let strategy = randomize();
+	setInterval(function() { strategy = randomize(); }, interval);
+
+	return function() { 
+		if (strategy === 'first') {
+			coords.x < max.x || coords.x < 0 ? coords.x+=step : coords.x;
+			coords.y < max.y || coords.y < 0 ? coords.y+=step : coords.y;
+		} else if (strategy === 'second') {
+			coords.x > 0 ? coords.x-=step : coords.x;
+			coords.y > max.y || coords.y < 0 ? coords.y+=step : coords.y;
+		} else if (strategy === 'third') {
+			coords.x > max.x || coords.x < 0 ? coords.x+=step : coords.x;
+			coords.y > 0 ? coords.y-=step : coords.y;
+		} else if (strategy=== 'fourth') {
+			coords.x > 0 ? coords.x-=step : coords.x;
+			coords.y > 0 ? coords.y-=step : coords.y;
 		}
-		if (firstSet === 'first') {
-			x2 < width || x2 < 0 ? x2+=step : x2;
-			y2 < height || y2 < 0 ? y2+=step : y2;
-		} else if (firstSet === 'second') {
-			x2 > 0 ? x2-=step : x2;
-			y2 > height || y2 < 0 ? y2+=step : y2;
-		} else if (firstSet === 'third') {
-			x2 > width || y2 < 0 ? x2+=step : x2;
-			x2 > 0 ? y2-=step : y2;
-		} else if (firstSet=== 'fourth') {
-			x2 > 0 ? x2-=step : x2;
-			y2 > 0 ? y2-=step : y2;
-		}
-		console.log(x1, y1);			
-	}	
+	}
+}
+
+
+// convert hexadecimal color to rgba
+function hexToRGB(hex) {
+	const values = hex.substr(1).split('');
+
+	const r = parseInt(values[0].toString() + values[1].toString(), 16);
+	const g = parseInt(values[2].toString() + values[3].toString(), 16);
+	const b = parseInt(values[4].toString() + values[5].toString(), 16);
+
+	return `${r},${g},${b}`;
 }
 
