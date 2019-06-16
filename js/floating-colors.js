@@ -137,7 +137,6 @@ function animation(options) {
 			coords.x > 0 ? coords.x-=step : coords.x;
 			coords.y > 0 ? coords.y-=step : coords.y;
 		}
-		console.log(strategy);
 	}
 }
 
