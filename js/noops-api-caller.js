@@ -14,5 +14,4 @@ function noopsApiCaller(options) {
 		.then(response => response.json())
 }
 
-
 window.noopsApiCaller = noopsApiCaller;

@@ -78,7 +78,7 @@ function prepareGradientsMeta(hexbotColors) {
 }
 
 
-// create new gradient using simple canvas api and setup animations for it
+// create new gradient using simple canvas api and then setup animations for it
 function createGradient(options) {
 	const { width, height } = floatingColors.canvas; 
 	const { gradient: gradientMeta, animationOptions } = options;
@@ -106,7 +106,7 @@ function createGradient(options) {
 }
 
 
-// chagne randomly given coordinates
+// change given coordinates randomly 
 function animation(options) {
 	const step = options.step || 10;
 	const interval = options.interval || 4000;
