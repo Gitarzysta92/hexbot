@@ -1,12 +1,14 @@
 'use strict'
+const floatingColors = {};
+
 
 // application options
-const floatingColors = {
+const colorsOptions = {
 	backgroundColor: '#fff',
 	redrawInterval: 100, 
 	animationOptions: {
-		strategyStep: 10,
-		strategyInterval: 2000,
+		strategyStep: 5,
+		strategyInterval: 4000,
 	}
 };
 
@@ -35,7 +37,7 @@ async function initFloatingColors() {
 	// create new canvas by simple canvas api
 	const canvasElem = document.getElementById('canvas');
 	floatingColors.canvas = new window.Canvas(canvasElem, {
-		bgColor: floatingColors.backgroundColor,
+		bgColor: colorsOptions.backgroundColor,
 	});
 
 	// convert obtained colors data to expected format
@@ -43,7 +45,7 @@ async function initFloatingColors() {
 
 	// create new gradients depending on created color model
 	const animations = gradients.map(gradient => createGradient({
-		animationOptions: floatingColors.animationOptions,
+		animationOptions: colorsOptions.animationOptions,
 		gradient
 	}));
 
@@ -52,7 +54,7 @@ async function initFloatingColors() {
 		floatingColors.canvas.draw(function(){
 			animations.forEach(animate => animate());
 		});
-	}, floatingColors.redrawInterval);
+	}, colorsOptions.redrawInterval);
 }
 
 
@@ -108,8 +110,8 @@ function createGradient(options) {
 
 // change given coordinates randomly 
 function animation(options) {
-	const step = options.step || 10;
-	const interval = options.interval || 4000;
+	const step = options.strategyStep || 10;
+	const interval = options.strategyInterval || 4000;
 	const coords = options.coords; 
 	const max = {
 		x: options.maxX || 2000,
